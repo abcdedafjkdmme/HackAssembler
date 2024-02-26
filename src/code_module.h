@@ -29,8 +29,8 @@ struct comp_bincode {
 };
 
 std::bitset<16> get_a_instruction_bincode(uint16_t value) {
-    std::bitset<16> instr = value;
-    instr.reset(15);
+    std::bitset<16> instr = value << 1;
+    instr.reset(0);
     return instr;
 }
 dest_bincode get_dest_bincode(dest_mnemonic mnemonic) {
