@@ -11,6 +11,7 @@
 #include "assembler_defines.h"
 #include <map>
 #include <format>
+#include "string_utils.h"
 
 bool does_instruction_have_dest_part(std::string instruction) {
 	return instruction.find('=') != std::string::npos;
@@ -110,7 +111,7 @@ static std::map<std::string, jump_mnemonic> jump_string_to_mnemonic_map{
 	{"JMP", jump_mnemonic::JMP},
 	{"JMP", jump_mnemonic::JNE},
 };
-std::variant<jump_bincode,assembler_error> get_jmp_bincode(std::string jmp_string) {
+std::variant<jump_bincode, assembler_error> parse_string_to_jmp_bincode(std::string jmp_string) {
 	if (not jump_string_to_mnemonic_map.contains(jmp_string)) {
 		return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = std::format("couldnt map jump string {} to jump mnemonic while getting jump bincode", jmp_string) };
 	}
@@ -128,12 +129,76 @@ static std::map<std::string, dest_mnemonic> dest_string_to_mnemonic_map{
 	{"MD", dest_mnemonic::MD},
 };
 
-std::variant<dest_bincode, assembler_error> get_dest_bincode(std::string dest_string) {
+std::variant<dest_bincode, assembler_error> parse_string_into_dest_bincode(std::string dest_string) {
 	if (not dest_string_to_mnemonic_map.contains(dest_string)) {
 		return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = std::format("couldnt map dest string {} to dest mnemonic while getting dest bincode", dest_string) };
 	}
 	dest_mnemonic dest_mnemonic = dest_string_to_mnemonic_map[dest_string];
 	return get_dest_bincode(dest_mnemonic);
+}
+
+static std::map<std::string, ALU_input> string_to_alu_input_map{
+	{"A", ALU_input::A},
+	{"D", ALU_input::D},
+	{"M", ALU_input::M},
+	{"1", ALU_input::one},
+	{"0", ALU_input::zero},
+};
+
+std::variant<comp_bincode, assembler_error> parse_string_into_comp_bincode(std::string comp_string) {
+	if (comp_string.size() == 1) {
+
+		if (not string_to_alu_input_map.contains(std::string{ comp_string[0] })) {
+			return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = "no operation instruction's first char isnt valid" };
+		}
+
+		ALU_input input = string_to_alu_input_map[std::string{ comp_string[0] }];
+		return get_comp_bincode(input);
+	
+	}
+	if (comp_string.find('+') != std::string::npos) {
+		auto comp_split = split_string(comp_string, "+");
+		if (comp_split.size() != 2) {
+			return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = "instruction contains more than one '+' symbol while parsing comp bincode" };
+		}
+		std::string input1_str = comp_split[0];
+		std::string input2_str = comp_split[1];
+
+		if (not string_to_alu_input_map.contains(input1_str)) {
+			return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = "add instruction's input1 is not valid string" };
+		}
+		if (not string_to_alu_input_map.contains(input2_str)) {
+			return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = "add instruction's input2 is not valid string" };
+		}
+
+		ALU_input input1 = string_to_alu_input_map[input1_str];
+		ALU_input input2 = string_to_alu_input_map[input2_str];
+		ALU_operation operation = ALU_operation::add;
+
+		return get_comp_bincode(input1, input2, operation);
+	}
+
+	if (comp_string.find('-') != std::string::npos) {
+		auto comp_split = split_string(comp_string, "-");
+		if (comp_split.size() != 2) {
+			return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = "instruction contains more than one '-' symbol while parsing comp bincode" };
+		}
+		std::string input1_str = comp_split[0];
+		std::string input2_str = comp_split[1];
+
+		if (not string_to_alu_input_map.contains(input1_str)) {
+			return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = "subtract instruction's input1 is not valid string" };
+		}
+		if (not string_to_alu_input_map.contains(input2_str)) {
+			return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = "subtract instruction's input2 is not valid string" };
+		}
+
+		ALU_input input1 = string_to_alu_input_map[input1_str];
+		ALU_input input2 = string_to_alu_input_map[input2_str];
+		ALU_operation operation = ALU_operation::subtract;
+
+		return get_comp_bincode(input1, input2, operation);
+	}
 }
 
 bincode_result get_c_instruction_bincode(std::string instruction) {
