@@ -13,7 +13,7 @@ TEST(ParserTest, GetCInstructionCompString) {
 
 	EXPECT_STREQ(std::get<std::string>(get_comp_string("AM=3+A;JMP")).c_str(), "3+A");
 
-	EXPECT_STREQ(std::get<std::string>(get_comp_string("AM=3+A")).c_str(), "3+A");
+	EXPECT_STREQ(std::get<std::string>(get_comp_string("AM=3+AD")).c_str(), "3+AD");
 
 	EXPECT_STREQ(std::get<std::string>(get_comp_string("AM=3+A;")).c_str(), "3+A");
 
