@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_CXX_STANDARD 20)
-project(RunUnitTests)
+project(UnitTest)
 
 
 include(FetchContent)
@@ -16,7 +16,10 @@ FetchContent_MakeAvailable(googletest)
 include(GoogleTest)
 enable_testing()
 
-add_executable(RunUnitTests test.cpp)
-target_link_libraries(RunUnitTests GTest::gtest_main)
+add_executable(UnitTest test.cpp)
+target_link_libraries(UnitTest GTest::gtest_main)
 
-gtest_discover_tests(RunUnitTests)
+gtest_add_tests(TARGET      UnitTest
+                TEST_SUFFIX .noArgs
+                TEST_LIST   noArgsTests
+)

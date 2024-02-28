@@ -4,4 +4,4 @@ project(HackAssembler)
 
 add_subdirectory(src)
 add_subdirectory(tests)
-target_link_libraries(RunUnitTests HackAssemblerLib)
+target_link_libraries(UnitTest HackAssemblerLib)
