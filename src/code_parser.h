@@ -11,7 +11,9 @@
 #include "assembler_defines.h"
 #include <map>
 #include <format>
-#include "string_utils.h"
+#include "utiils.h"
+
+
 
 bool does_instruction_have_dest_part(std::string instruction) {
 	return instruction.find('=') != std::string::npos;
@@ -119,7 +121,7 @@ std::variant<jump_bincode, assembler_error> parse_string_to_jmp_bincode(std::str
 	return get_jmp_bincode(jmp_mnemonic);
 }
 
-static std::map<std::string, dest_mnemonic> dest_string_to_mnemonic_map{
+static  std::map<std::string, dest_mnemonic> dest_string_to_mnemonic_map{
 	{"A", dest_mnemonic::A},
 	{"AD", dest_mnemonic::AD},
 	{"AM", dest_mnemonic::AM},
@@ -137,27 +139,98 @@ std::variant<dest_bincode, assembler_error> parse_string_into_dest_bincode(std::
 	return get_dest_bincode(dest_mnemonic);
 }
 
-static std::map<std::string, ALU_input> string_to_alu_input_map{
-	{"A", ALU_input::A},
-	{"D", ALU_input::D},
-	{"M", ALU_input::M},
-	{"1", ALU_input::one},
-	{"0", ALU_input::zero},
+static  std::map<char, ALU_input> string_to_alu_input_map{
+	{'A', ALU_input::A},
+	{'D', ALU_input::D},
+	{'M', ALU_input::M},
+	{'1', ALU_input::one},
+	{'0', ALU_input::zero},
 };
-
+static  std::map<char, ALU_operation> string_to_alu_operation_map{
+	{'+', ALU_operation::add},
+	{'&', ALU_operation::bit_and},
+	{'!', ALU_operation::bit_not},
+	{'|', ALU_operation::bit_or},
+	{'-', ALU_operation::subtract},
+};
 std::variant<comp_bincode, assembler_error> parse_string_into_comp_bincode(std::string comp_string) {
+
 	if (comp_string.size() == 1) {
 
-		if (not string_to_alu_input_map.contains(std::string{ comp_string[0] })) {
-			return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = "no operation instruction's first char isnt valid" };
+		if (not string_to_alu_input_map.contains(comp_string[0])) {
+			return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = "no operation instruction's first input isnt valid" };
 		}
 
-		ALU_input input = string_to_alu_input_map[std::string{ comp_string[0] }];
+		ALU_input input = string_to_alu_input_map[comp_string[0]];
+
+		if (input != ALU_input::one and input != ALU_input::zero) {
+			return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = "no operation instruction's alu input must be 1 or 0" };
+		}
+
 		return get_comp_bincode(input);
-	
 	}
+
+
+	/*std::optional<ALU_operation> alu_operation_to_execute{};
+	std::optional<char> alu_operation_to_execute_char{};
+
+	for (auto const& [alu_operation_str, alu_operation] : string_to_alu_operation_map) {
+		if (comp_string.find(alu_operation_str)) {
+			alu_operation_to_execute = alu_operation;
+			alu_operation_to_execute_char = alu_operation_str;
+		}
+	}*/
+
+	//if (not alu_operation_to_execute.has_value()) {
+	//	return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = "no alu operation found in c instruction" };
+	//}
+
+
+	else if (comp_string.size() == 2 ) {
+
+		char alu_operation_char = comp_string[0];
+		char alu_input_char = comp_string[1];
+
+		if (not string_to_alu_operation_map.contains( alu_operation_char)) {
+			return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = "1 input operation's 1st char isnt valid operation" };
+		}
+		if (not string_to_alu_input_map.contains(comp_string[1])) {
+			return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = "1 input operation's 2nd char isnt valid input" };
+		}
+
+		ALU_operation alu_operation = string_to_alu_operation_map[alu_operation_char];
+		ALU_input alu_input = string_to_alu_input_map[alu_input_char];
+
+		return get_comp_bincode(alu_input, alu_operation);
+	}
+
+	else if (comp_string.size() == 3) {
+
+		char alu_input1_char = comp_string[0];
+		char alu_operation_char = comp_string[1];
+		char alu_input2_char = comp_string[2];
+
+		if (not string_to_alu_input_map.contains(alu_input1_char)) {
+			return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = "2 input operation's 1st char isnt valid input" };
+		}
+		if (not string_to_alu_input_map.contains(alu_input2_char)) {
+			return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = "2 input operation's 2nd char isnt valid input" };
+		}
+
+		ALU_input alu_input1{ string_to_alu_input_map[alu_input1_char] };
+		ALU_input alu_input2{ string_to_alu_input_map[alu_input2_char] };
+		ALU_operation alu_operation = string_to_alu_operation_map[alu_operation_char];
+
+		return get_comp_bincode(alu_input1, alu_input2, alu_operation);
+
+	}
+
+	//if (comp_string.size() >= 2) {
+		//if(comp_string[0] ==  )
+	//}
+	/*
 	if (comp_string.find('+') != std::string::npos) {
-		auto comp_split = split_string(comp_string, "+");
+		auto comp_split = string_utils::split_string(comp_string, "+");
 		if (comp_split.size() != 2) {
 			return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = "instruction contains more than one '+' symbol while parsing comp bincode" };
 		}
@@ -179,7 +252,7 @@ std::variant<comp_bincode, assembler_error> parse_string_into_comp_bincode(std::
 	}
 
 	if (comp_string.find('-') != std::string::npos) {
-		auto comp_split = split_string(comp_string, "-");
+		auto comp_split = string_utils::split_string(comp_string, "-");
 		if (comp_split.size() != 2) {
 			return assembler_error{ .ec = std::errc::invalid_argument, .error_msg = "instruction contains more than one '-' symbol while parsing comp bincode" };
 		}
@@ -199,6 +272,7 @@ std::variant<comp_bincode, assembler_error> parse_string_into_comp_bincode(std::
 
 		return get_comp_bincode(input1, input2, operation);
 	}
+	*/
 }
 
 bincode_result get_c_instruction_bincode(std::string instruction) {

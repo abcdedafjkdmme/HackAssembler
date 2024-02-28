@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "code_parser.h"
+#include <vector>
 
 // Demonstrate some basic assertions.
 TEST(ParserTest, GetCInstructionDestString) {
@@ -25,6 +26,15 @@ TEST(ParserTest, GetCInstructionJMPString) {
 	EXPECT_EQ(std::get<assembler_error>(get_jmp_string("AM=3+A")).ec , std::errc::invalid_argument );
 
 }
+
+
+TEST(ParserTest, GetCInstructionComp) {
+
+	EXPECT_EQ(std::get<comp_bincode>(parse_string_into_comp_bincode("M=3+A")), comp_bincode{});
+	EXPECT_EQ(std::get<assembler_error>(get_jmp_string("AM=3+A")).ec, std::errc::invalid_argument);
+
+}
+
 TEST(ParserTest, GetAInstructionBincode) {
 
 	EXPECT_EQ(std::get<bincode>(get_a_instruction_bincode("@0b101")), 0b1010);
