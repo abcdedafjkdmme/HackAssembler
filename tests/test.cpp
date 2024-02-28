@@ -23,15 +23,39 @@ TEST(ParserTest, GetCInstructionCompString) {
 TEST(ParserTest, GetCInstructionJMPString) {
 
 	EXPECT_STREQ(std::get<std::string>(get_jmp_string("AM=3+A;JMP")).c_str(), "JMP");
-	EXPECT_EQ(std::get<assembler_error>(get_jmp_string("AM=3+A")).ec , std::errc::invalid_argument );
+	EXPECT_EQ(std::get<assembler_error>(get_jmp_string("AM=3+A")).ec, std::errc::invalid_argument);
 
 }
 
 
-TEST(ParserTest, GetCInstructionComp) {
+TEST(ParserTest, GetCInstructionCompBincode) {
 
-	EXPECT_EQ(std::get<comp_bincode>(parse_string_into_comp_bincode("M=3+A")), comp_bincode{});
-	EXPECT_EQ(std::get<assembler_error>(get_jmp_string("AM=3+A")).ec, std::errc::invalid_argument);
+
+	comp_bincode bin = std::get<comp_bincode>(parse_string_into_comp_bincode("0"));
+	comp_bincode compare = comp_bincode{ 0,1,0,1,0,1,0 };
+	EXPECT_EQ(bin, compare);
+
+	bin = std::get<comp_bincode>(parse_string_into_comp_bincode("1"));
+	compare = comp_bincode{ 0,1,1,1,1,1,1 };
+	EXPECT_EQ(bin, compare);
+
+	bin = std::get<comp_bincode>(parse_string_into_comp_bincode("-1"));
+	compare = comp_bincode{ 0,1,1,1,0,1,0 };
+	EXPECT_EQ(bin, compare);
+
+
+	bin = std::get<comp_bincode>(parse_string_into_comp_bincode("D"));
+	compare = comp_bincode{ 0, 0,0,1,1,0,0 };
+	EXPECT_EQ(bin, compare);
+
+	bin = std::get<comp_bincode>(parse_string_into_comp_bincode("A"));
+	compare = comp_bincode{ 0, 1, 1, 0,0,0,0 };
+	EXPECT_EQ(bin, compare);
+
+	bin = std::get<comp_bincode>(parse_string_into_comp_bincode("M"));
+	compare = comp_bincode{ 1, 1, 1, 0,0,0,0 };
+	EXPECT_EQ(bin, compare);
+
 
 }
 

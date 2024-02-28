@@ -28,6 +28,11 @@ struct comp_bincode {
 	bool c5{};
 	bool c6{};
 };
+bool operator==(const comp_bincode& lhs, const comp_bincode& rhs)
+{
+	return (lhs.a == rhs.a) and (lhs.c1 == rhs.c1) and (lhs.c2 == rhs.c2) and (lhs.c3 == rhs.c3) and (lhs.c4 == rhs.c4) and (lhs.c5 == rhs.c5) and (lhs.c6 == rhs.c6);
+}
+
 
 std::bitset<16> get_a_instruction_bincode(uint16_t value) {
 	std::bitset<16> instr = value << 1;
@@ -83,19 +88,22 @@ comp_bincode get_comp_bincode(ALU_input input) {
 	switch (input) {
 	case ALU_input::zero: return comp_bincode{ .c1 = 1, .c3 = 1, .c5 = 1 };
 	case ALU_input::one: return comp_bincode{ .c1 = 1, .c2 = 1, .c3 = 1, .c4 = 1 ,.c5 = 1, .c6 = 1 };
+	case ALU_input::D: return comp_bincode{ .c3 = 1, .c4 = 1 };
+	case ALU_input::A: return comp_bincode{ .c1 = 1, .c2 = 1 };
+	case ALU_input::M: return comp_bincode{ .a = 1 , .c1 = 1, .c2 = 1 };
 	default:assert(false);
 	}
 }
 comp_bincode get_comp_bincode(ALU_input input, ALU_operation operation) {
 	switch (operation) {
-	case ALU_operation::none: {
+	/*case ALU_operation::none: {
 		switch (input) {
 		case ALU_input::D: return comp_bincode{ .c3 = 1, .c4 = 1 };
 		case ALU_input::A: return comp_bincode{ .c1 = 1, .c2 = 1 };
 		case ALU_input::M: return comp_bincode{ .a = 1, .c1 = 1, .c2 = 1 };
 		default: assert(false);
 		}
-	}
+	}*/
 	case ALU_operation::bit_not: {
 		switch (input) {
 		case ALU_input::D: return comp_bincode{ .c3 = 1, .c4 = 1 , .c6 = 1 };
