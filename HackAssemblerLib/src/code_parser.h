@@ -13,6 +13,9 @@
 #include <string>
 #include <variant>
 
+bool is_line_a_comment(std::string instruction) {
+	return instruction.find("//") != std::string::npos;
+}
 bool is_a_instruction(std::string instruction) {
 	return instruction[0] == '@';
 }
@@ -308,5 +311,23 @@ bincode_result instruction_string_to_bincode(std::string instruction) {
 	else {
 		return parse_c_instruction_into_bincode(instruction);
 	}
-	return 0;
+}
+
+std::vector<bincode_result> string_program_to_bincode(std::string program) {
+
+	std::vector<bincode_result> result{};
+
+	auto instructions = assembler_utils::split_string(program, "\n");
+	for (std::string& instr : instructions) {
+		if (instr.empty()) {
+			continue;
+		}
+		if (is_line_a_comment(instr)) {
+			continue;
+		}
+
+		result.push_back(instruction_string_to_bincode(instr));
+	}
+
+	return result;
 }
