@@ -13,8 +13,13 @@
 #include <string>
 #include <variant>
 
-bool is_line_a_comment(std::string instruction) {
-	return instruction.find("//") != std::string::npos;
+std::string remove_comment_from_instruction(std::string instruction) {
+	size_t pos_of_comment = instruction.find("//");
+	if (pos_of_comment == std::string::npos) {
+		return instruction;
+	}
+	instruction.erase( pos_of_comment, instruction.size());
+	return instruction;
 }
 bool is_a_instruction(std::string instruction) {
 	return instruction[0] == '@';
@@ -38,7 +43,7 @@ bincode_result parse_a_instruction_into_bincode(std::string instruction) {
 	auto parse_into_int_result = std::from_chars(
 		instruction.data(), instruction.data() + instruction.size(), value);
 
-	if (value > pow(15, 2)) {
+	if (value > pow(2, 15)) {
 		return assembler_error{ .ec = std::errc::value_too_large,
 							   .error_msg =
 								   "value in a instruction is larger than 15 bits" };
@@ -56,15 +61,7 @@ bincode_result parse_a_instruction_into_bincode(std::string instruction) {
 }
 
 parser_string_result get_dest_string(std::string instruction) {
-	/*
-	size_t pos_of_equ = instruction.find('=');
-	if (pos_of_equ == std::string::npos) {
-		return assembler_error{ .ec = std::errc::invalid_argument,
-							   .error_msg = " '=' not found in c instruction" };
-	}
 
-	return std::string{ instruction.data(), pos_of_equ };
-	*/
 
 	auto split = assembler_utils::split_string(instruction, "=");
 	if (split.size() > 2) {
@@ -79,41 +76,7 @@ parser_string_result get_dest_string(std::string instruction) {
 }
 
 parser_string_result get_jmp_string(std::string instruction) {
-	/*
-	size_t pos_of_equ = instruction.find('=');
-	size_t pos_of_semicolon = instruction.find(';');
 
-	if (pos_of_equ == std::string::npos and instruction[0] == '0') {
-		return std::string{ "0" };
-	}
-	if (pos_of_equ == std::string::npos and instruction[0] != '0') {
-		return assembler_error{ .ec = std::errc::invalid_argument,
-							   .error_msg =
-								   "'=' not found in c instruction and the first "
-								   "char isnt 0 ,while parsing comp string" };
-	}
-
-	if ((pos_of_semicolon != std::string::npos) and
-		(pos_of_semicolon < pos_of_equ)) {
-		return assembler_error{ .ec = std::errc::invalid_argument,
-							   .error_msg =
-								   " ; is placed before = in c instruction ,while "
-								   "parsing comp string" };
-	}
-
-	std::string comp_part{};
-
-	if (pos_of_semicolon != std::string::npos) {
-		comp_part = std::string{ instruction.data() + pos_of_equ + 1,
-								pos_of_semicolon - pos_of_equ - 1 };
-	}
-	else {
-		comp_part = std::string{ instruction.data() + pos_of_equ + 1,
-								instruction.length() - pos_of_equ - 1 };
-	}
-
-	return comp_part;
-	*/
 	auto split = assembler_utils::split_string(instruction, ";");
 	if (split.size() > 2) {
 		return assembler_error{ std::errc::invalid_argument, "incorrect amount of ; in c instruction" };
@@ -129,23 +92,6 @@ parser_string_result get_jmp_string(std::string instruction) {
 }
 
 parser_string_result get_comp_string(std::string instruction) {
-	/*
-	size_t pos_of_semicolon = instruction.find(';');
-	if (pos_of_semicolon == std::string::npos) {
-		return assembler_error{
-			.ec = std::errc::invalid_argument,
-			.error_msg =
-				"could not find ; in c instruction ,while parsing jmp string " };
-	}
-	else if (pos_of_semicolon == instruction.length() - 1) {
-		return assembler_error{
-			.ec = std::errc::invalid_argument,
-			.error_msg =
-				"; is the last char in c instruction ,while parsing jmp string" };
-	}
-	return std::string{ instruction.data() + pos_of_semicolon + 1,
-					   instruction.length() - 1 };
-	*/
 
 	auto split = assembler_utils::split_string(instruction, "=");
 	if (split.size() > 2) {
@@ -195,7 +141,7 @@ static std::map<std::string, comp_bincode> string_to_comp_bincode_map{
 	{"-D", 0b0001111},
 	{"-A", 0b0110011},
 	{"-M", 0b1110011},
-	{"D+1",0b0111111},
+	{"D+1",0b0011111},
 	{"A+1",0b0110111},
 	{"M+1",0b1110111},
 	{"D-1",0b0001110},
@@ -208,28 +154,28 @@ static std::map<std::string, comp_bincode> string_to_comp_bincode_map{
 	{"A-D",0b0000111},
 	{"M-D",0b1000111},
 	{"D&A",0b0000000},
-	{"D&A",0b1000000},
+	{"D&M",0b1000000},
 	{"D|A",0b0010101},
 	{"D|M",0b1010101},
 };
 
 std::variant<dest_bincode, assembler_error> parse_string_into_dest_bincode(std::string dest_string) {
 	if (not string_to_dest_bincode_map.contains(dest_string)) {
-		return assembler_error{ std::errc::invalid_argument, "couldnt parse dest string" };
+		return assembler_error{ std::errc::invalid_argument, std::format("couldnt parse dest string, str was {}", dest_string) };
 	}
 	return string_to_dest_bincode_map[dest_string];
 }
 
 std::variant<comp_bincode, assembler_error> parse_string_into_comp_bincode(std::string comp_string) {
 	if (not string_to_comp_bincode_map.contains(comp_string)) {
-		return assembler_error{ std::errc::invalid_argument, "couldnt parse comp string" };
+		return assembler_error{ std::errc::invalid_argument, std::format("couldnt parse comp string, str was {}", comp_string) };
 	}
 	return string_to_comp_bincode_map[comp_string];
 }
 
 std::variant<jmp_bincode, assembler_error> parse_string_into_jmp_bincode(std::string jmp_string) {
 	if (not string_to_jmp_bincode_map.contains(jmp_string)) {
-		return assembler_error{ std::errc::invalid_argument, "couldnt parse jmp string" };
+		return assembler_error{ std::errc::invalid_argument, std::format("couldnt parse jmp string, str was {}", jmp_string) };
 	}
 	return string_to_jmp_bincode_map[jmp_string];
 }
@@ -319,10 +265,9 @@ std::vector<bincode_result> string_program_to_bincode(std::string program) {
 
 	auto instructions = assembler_utils::split_string(program, "\n");
 	for (std::string& instr : instructions) {
+		
+		instr = remove_comment_from_instruction(instr);
 		if (instr.empty()) {
-			continue;
-		}
-		if (is_line_a_comment(instr)) {
 			continue;
 		}
 

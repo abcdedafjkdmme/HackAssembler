@@ -2,28 +2,48 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <filesystem>
 
 int main() {
-	std::string input_filepath{};
-	std::string output_filepath{};
+	std::filesystem::path input_filepath{ "C:/Program Files/nand2tetris/projects/06/rect/RectL.asm"};
+	std::filesystem::path output_filepath{ "hack_res.hack"};
 
-	/*std::cout << "print input file path \n";
-	std::cin >> input_filepath;
+	std::ifstream input_file{ input_filepath};
+	if (not input_file) {
+		std::cerr << "couldnt open input file";
+		return -1;
+	}
+	std::ofstream output_file{ output_filepath };
 
-	std::cout << "print output file path \n";
-	std::cin >> output_filepath;*/
-
-	std::ifstream input_file{ "C:/Program Files/nand2tetris/projects/06/add/add.asm" };
+	if (not output_file.good()) {
+		std::cerr << "couldnt open ouptut file";
+		return -1;
+	}
 
 	std::stringstream input_file_buf{};
 	input_file_buf << input_file.rdbuf();
 	std::string input = input_file_buf.str();
 
-	auto output = string_program_to_bincode(input);
+	//std::cout << input;
 
+	auto assembler_output = string_program_to_bincode(input);
 
-	for (auto bin : output) {
-		std::cout << std::get<bincode>(bin) << std::endl;
+	bool any_errors_occurred = false;
+
+	for (auto bin : assembler_output) {
+		if (std::get_if<assembler_error>(&bin)) {
+			std::cout << std::get<assembler_error>(bin).error_msg << std::endl;
+			any_errors_occurred = true;
+		}
 	}
+	if (any_errors_occurred) {
+		return -1;
+	}
+
+	for (auto bin : assembler_output) {
+		output_file << std::get<bincode>(bin) << "\n";
+	}
+
+
 	return 0;
 }
